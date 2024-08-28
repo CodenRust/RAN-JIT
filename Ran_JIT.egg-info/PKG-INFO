@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: Ran-JIT
-Version: 0.0.5
+Version: 0.0.6
 Summary: A python lib when imported boosts your code using JIT
 Home-page: 
 Author: Coden
@@ -29,3 +29,5 @@ Change Log
 - test 4
 0.0.5(27/8/2024)
 - test 5
+0.0.6(28/8/2024)
+- test 6
