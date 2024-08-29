@@ -10,7 +10,7 @@ classifiers = [
  
 setup(
   name='Ran-JIT',
-  version='0.0.6',
+  version='0.0.7',
   description='A python lib when imported boosts your code using JIT',
   long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
   url='',  

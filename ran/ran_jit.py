@@ -1,8 +1,47 @@
 import numba
+import numpy as np
 import inspect
 import os
 import psutil
 import platform
+from concurrent.futures import ThreadPoolExecutor
+
+# Cache for storing results of process_chunk
+cache = {}
+
+@numba.njit
+def chunk_data(data, chunk_size):
+    """
+    Splits data into chunks of specified size.
+    """
+    for i in range(0, len(data), chunk_size):
+        yield data[i:i + chunk_size]
+
+def process_chunk(chunk):
+    """
+    Process a chunk of data. This function should contain the actual computation logic.
+    Uses manual caching to avoid reprocessing the same chunk multiple times.
+    """
+    # Convert chunk to a tuple so it can be used as a key in the cache
+    chunk_key = tuple(chunk)
+    if chunk_key in cache:
+        return cache[chunk_key]
+    
+    result = sum(chunk)  # Example operation
+    
+    # Store the result in the cache
+    cache[chunk_key] = result
+    return result
+
+def threaded_processing(data, chunk_size=100, max_workers=4):
+    """
+    Process data in parallel using threads, by splitting the data into chunks.
+    """
+    data = np.asarray(data)  # Ensure data is a NumPy array
+    chunks = list(chunk_data(data, chunk_size))  # JIT-compiled function
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        results = list(executor.map(process_chunk, chunks))
+    return results
 
 def apply_jit_to_all_functions(module_globals):
     """
@@ -10,17 +49,18 @@ def apply_jit_to_all_functions(module_globals):
     """
     for name, obj in module_globals.items():
         if inspect.isfunction(obj) and name != 'apply_jit_to_all_functions':
-            if name == 'optimize_system_resources':
-                print(f"RAN LIB : Skipping JIT for {name} as it handles system resources.")
+            if name in ['optimize_system_resources', 'threaded_processing']:
+                print(f"RAN LIB : Skipping JIT for {name} as it uses unsupported constructs.")
                 continue
-            
+
             try:
                 source_code = inspect.getsource(obj)
                 num_loops = source_code.count('for ') + source_code.count('while ')
                 
+                # Apply JIT if the function has loops or numpy operations
                 if num_loops > 0 or 'np.' in source_code:
                     print(f"RAN LIB : JIT applied to {name}.")
-                    module_globals[name] = numba.njit(obj, nopython=True, cache=True)
+                    module_globals[name] = numba.njit(obj, cache=True)
                 else:
                     print(f"RAN LIB : Skipping JIT for {name} due to low complexity.")
             except Exception as e:
@@ -48,6 +88,9 @@ def optimize_system_resources():
     except Exception as e:
         print(f"RAN LIB : Failed to optimize system resources: {e}")
 
-if __name__ != "__main__":
+def ran():
+    """
+    Function to trigger JIT application and system resource optimization.
+    """
     apply_jit_to_all_functions(globals())
     optimize_system_resources()
