@@ -10,7 +10,7 @@ classifiers = [
  
 setup(
   name='Ran-JIT',
-  version='0.0.7',
+  version='0.1.1',
   description='A python lib when imported boosts your code using JIT',
   long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
   url='',  
@@ -22,7 +22,13 @@ setup(
   packages=find_packages(),
   include_package_data=True,
   install_requires=[
-        'numba>=0.53.1',  # Specify the minimum version if known
-        'psutil>=5.8.0'
+        'numba>=0.53.1',       # Just-In-Time compilation for Python
+        'psutil>=5.8.0',       # System and process utilities
+        'requests>=2.25.1',    # HTTP library
+        'requests-cache>=0.5', # Caching for requests
+        'aiohttp>=3.7.4',      # Asynchronous HTTP client
+        'asyncio',             # Async support (builtin library, no version required)
+        'httpx>=0.18.2',       # HTTP client for async and sync requests
+        'urllib3>=1.26.5'  
    ],
 )

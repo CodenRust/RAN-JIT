@@ -4,10 +4,18 @@ import inspect
 import os
 import psutil
 import platform
+import requests
+import requests_cache
+import httpx
 from concurrent.futures import ThreadPoolExecutor
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Cache for storing results of process_chunk
 cache = {}
+
+# Create a session for connection pooling
+session = requests.Session()
 
 @numba.njit
 def chunk_data(data, chunk_size):
@@ -43,13 +51,88 @@ def threaded_processing(data, chunk_size=100, max_workers=4):
         results = list(executor.map(process_chunk, chunks))
     return results
 
+### Network Boost Functionality ###
+
+def setup_network_boost():
+    """
+    Set up various techniques for boosting API request performance.
+    """
+    setup_requests_cache()
+    setup_retry_strategy()
+    print("RAN LIB : Network boost setup complete.")
+
+### Technique 1: Connection Pooling with requests.Session
+def fetch_with_session(url):
+    """
+    Fetch data using connection pooling for faster repeated requests.
+    """
+    response = session.get(url)
+    return response.text
+
+### Technique 2: HTTP/2 Support with httpx
+def fetch_http2(url):
+    """
+    Fetch data using HTTP/2 for faster multiplexed connections.
+    """
+    with httpx.Client(http2=True) as client:
+        response = client.get(url)
+        return response.text
+
+### Technique 3: Caching API Responses (requests_cache)
+def setup_requests_cache():
+    """
+    Set up caching of API responses to avoid redundant requests.
+    """
+    requests_cache.install_cache('api_cache', expire_after=300)  # Cache for 5 minutes
+    print("RAN LIB : API response caching enabled.")
+
+def fetch_with_cache(url):
+    """
+    Fetch data using the cache if available.
+    """
+    response = session.get(url)
+    return response.text
+
+### Technique 4: Retry with Exponential Backoff
+def setup_retry_strategy():
+    """
+    Set up a retry strategy with exponential backoff for failed API requests.
+    """
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+    print("RAN LIB : Retry strategy with exponential backoff enabled.")
+
+def fetch_with_retry(url):
+    """
+    Fetch data with retries for better reliability.
+    """
+    response = session.get(url)
+    return response.text
+
+### Technique 5: GZIP Compression
+def fetch_with_gzip(url):
+    """
+    Fetch data with GZIP compression enabled for faster response times.
+    """
+    headers = {'Accept-Encoding': 'gzip'}
+    response = session.get(url, headers=headers)
+    return response.content
+
+
+### JIT Application and Optimization ###
+
 def apply_jit_to_all_functions(module_globals):
     """
     Apply JIT compilation to user-defined functions selectively, only if they benefit from JIT.
     """
     for name, obj in module_globals.items():
         if inspect.isfunction(obj) and name != 'apply_jit_to_all_functions':
-            if name in ['optimize_system_resources', 'threaded_processing']:
+            if name in ['optimize_system_resources', 'threaded_processing', 'setup_network_boost']:
                 print(f"RAN LIB : Skipping JIT for {name} as it uses unsupported constructs.")
                 continue
 
@@ -65,6 +148,8 @@ def apply_jit_to_all_functions(module_globals):
                     print(f"RAN LIB : Skipping JIT for {name} due to low complexity.")
             except Exception as e:
                 print(f"RAN LIB : Skipping JIT for {name}: {e}")
+
+### System Resource Optimization ###
 
 def optimize_system_resources():
     """
@@ -88,9 +173,11 @@ def optimize_system_resources():
     except Exception as e:
         print(f"RAN LIB : Failed to optimize system resources: {e}")
 
+### Main function to trigger JIT application, resource optimization, and network boost ###
 def ran():
     """
-    Function to trigger JIT application and system resource optimization.
+    Function to trigger JIT application, system resource optimization, and network boost.
     """
     apply_jit_to_all_functions(globals())
     optimize_system_resources()
+    setup_network_boost()  # Automatically boost network performance
